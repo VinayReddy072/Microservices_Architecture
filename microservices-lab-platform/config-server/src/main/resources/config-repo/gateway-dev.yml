@@ -1,0 +1,91 @@
+# ============================================================
+# gateway-dev.yml — API Gateway DEV profile
+# ============================================================
+
+server:
+  port: 8080
+
+spring:
+  cloud:
+    gateway:
+      discovery:
+        locator:
+          enabled: true
+          lower-case-service-id: true
+      routes:
+        - id: booking-service
+          uri: lb://booking-service
+          predicates:
+            - Path=/api/bookings/**
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: booking-service
+                fallbackUri: forward:/fallback/booking
+            - name: Retry
+              args:
+                retries: 3
+                statuses: BAD_GATEWAY,SERVICE_UNAVAILABLE
+            - AddRequestHeader=X-Source-Gateway, lab-platform-gateway
+            - RemoveRequestHeader=Cookie
+
+        - id: equipment-service
+          uri: lb://equipment-service
+          predicates:
+            - Path=/api/equipment/**
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: equipment-service
+                fallbackUri: forward:/fallback/equipment
+            - name: Retry
+              args:
+                retries: 3
+                statuses: BAD_GATEWAY,SERVICE_UNAVAILABLE
+            - AddRequestHeader=X-Source-Gateway, lab-platform-gateway
+            - RemoveRequestHeader=Cookie
+
+        - id: auth-service
+          uri: lb://booking-service
+          predicates:
+            - Path=/api/auth/**
+          filters:
+            - RemoveRequestHeader=Cookie
+
+      globalcors:
+        cors-configurations:
+          '[/**]':
+            allowed-origins: "*"
+            allowed-methods: "*"
+            allowed-headers: "*"
+
+      default-filters:
+        - DedupeResponseHeader=Access-Control-Allow-Credentials Access-Control-Allow-Origin
+
+jwt:
+  secret: ${JWT_SECRET:dev-secret-key-must-be-at-least-256-bits-long-for-HS256-algorithm}
+
+resilience4j:
+  circuit-breaker:
+    instances:
+      booking-service:
+        sliding-window-size: 10
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 10s
+      equipment-service:
+        sliding-window-size: 10
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 10s
+
+logging:
+  level:
+    org.springframework.cloud.gateway: DEBUG
+    com.labplatform.gateway: DEBUG
+    reactor.netty: INFO
+
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_URI:http://localhost:8761/eureka}
+  instance:
+    prefer-ip-address: true

@@ -1,0 +1,16 @@
+spring:
+  application:
+    name: booking-service
+  config:
+    import: optional:configserver:http://${CONFIG_SERVER_USERNAME:configuser}:${CONFIG_SERVER_PASSWORD:configpass}@${CONFIG_SERVER_HOST:localhost}:8888
+
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:dev}
+
+management:
+  zipkin:
+    tracing:
+      endpoint: http://${ZIPKIN_HOST:localhost}:9411/api/v2/spans
+  tracing:
+    sampling:
+      probability: 1.0

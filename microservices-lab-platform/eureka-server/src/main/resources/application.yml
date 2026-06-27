@@ -1,0 +1,49 @@
+server:
+  port: 8761
+
+spring:
+  application:
+    name: eureka-server
+  security:
+    user:
+      name: ${EUREKA_USERNAME:eurekauser}
+      password: ${EUREKA_PASSWORD:eurekapass}
+
+eureka:
+  server:
+    username: ${EUREKA_USERNAME:eurekauser}
+    password: ${EUREKA_PASSWORD:eurekapass}
+    enable-self-preservation: false          # Disable in dev; enable in prod
+    eviction-interval-timer-in-ms: 5000
+    renewal-percent-threshold: 0.85
+  client:
+    register-with-eureka: false              # Server does NOT register itself
+    fetch-registry: false
+    service-url:
+      defaultZone: http://${EUREKA_USERNAME:eurekauser}:${EUREKA_PASSWORD:eurekapass}@localhost:${server.port}/eureka
+  instance:
+    hostname: localhost
+    prefer-ip-address: false
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: always
+
+info:
+  application:
+    name: ${spring.application.name}
+    description: Service Discovery Registry
+    version: 1.0.0
+
+logging:
+  level:
+    com.netflix.eureka: INFO
+    com.netflix.discovery: INFO
+    com.labplatform: DEBUG
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"

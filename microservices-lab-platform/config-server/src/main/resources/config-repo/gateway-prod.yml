@@ -1,0 +1,104 @@
+# ============================================================
+# gateway-prod.yml — API Gateway PROD profile
+# ============================================================
+
+server:
+  port: 8080
+  netty:
+    connection-timeout: 10s
+
+spring:
+  cloud:
+    gateway:
+      discovery:
+        locator:
+          enabled: true
+          lower-case-service-id: true
+      routes:
+        - id: booking-service
+          uri: lb://booking-service
+          predicates:
+            - Path=/api/bookings/**
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: booking-service
+                fallbackUri: forward:/fallback/booking
+            - name: Retry
+              args:
+                retries: 3
+                statuses: BAD_GATEWAY,SERVICE_UNAVAILABLE
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter.replenishRate: 100
+                redis-rate-limiter.burstCapacity: 200
+            - AddRequestHeader=X-Source-Gateway, lab-platform-gateway
+            - RemoveRequestHeader=Cookie
+
+        - id: equipment-service
+          uri: lb://equipment-service
+          predicates:
+            - Path=/api/equipment/**
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: equipment-service
+                fallbackUri: forward:/fallback/equipment
+            - name: Retry
+              args:
+                retries: 3
+                statuses: BAD_GATEWAY,SERVICE_UNAVAILABLE
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter.replenishRate: 100
+                redis-rate-limiter.burstCapacity: 200
+            - AddRequestHeader=X-Source-Gateway, lab-platform-gateway
+            - RemoveRequestHeader=Cookie
+
+        - id: auth-service
+          uri: lb://booking-service
+          predicates:
+            - Path=/api/auth/**
+
+      globalcors:
+        cors-configurations:
+          '[/**]':
+            allowed-origins:
+              - "https://lab-platform.university.edu"
+            allowed-methods:
+              - GET
+              - POST
+              - PUT
+              - DELETE
+            allowed-headers: "*"
+            allow-credentials: true
+            max-age: 3600
+
+jwt:
+  secret: ${JWT_SECRET}
+
+resilience4j:
+  circuit-breaker:
+    instances:
+      booking-service:
+        sliding-window-size: 20
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 30s
+      equipment-service:
+        sliding-window-size: 20
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 30s
+
+logging:
+  level:
+    root: WARN
+    com.labplatform.gateway: INFO
+  file:
+    name: /var/log/gateway/application.log
+
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_URI:http://eureka-server:8761/eureka}
+  instance:
+    prefer-ip-address: true

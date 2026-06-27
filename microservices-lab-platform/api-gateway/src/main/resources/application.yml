@@ -1,0 +1,8 @@
+spring:
+  application:
+    name: gateway
+  config:
+    import: optional:configserver:http://${CONFIG_SERVER_USERNAME:configuser}:${CONFIG_SERVER_PASSWORD:configpass}@${CONFIG_SERVER_HOST:localhost}:8888
+
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:dev}

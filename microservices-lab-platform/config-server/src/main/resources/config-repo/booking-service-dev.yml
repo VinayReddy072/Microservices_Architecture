@@ -1,0 +1,112 @@
+# ============================================================
+# booking-service-dev.yml — Booking Service DEV profile
+# ============================================================
+
+server:
+  port: 8081
+
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/booking_db
+    username: ${DB_USERNAME:bookinguser}
+    password: ${DB_PASSWORD:bookingpass}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 5
+      connection-timeout: 30000
+      idle-timeout: 600000
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+  rabbitmq:
+    host: ${RABBITMQ_HOST:localhost}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USERNAME:guest}
+    password: ${RABBITMQ_PASSWORD:guest}
+    virtual-host: /
+    connection-timeout: 5000
+    # Required for RabbitTemplate confirmCallback to receive publisher confirms
+    publisher-confirm-type: correlated
+    publisher-returns: true
+    listener:
+      simple:
+        acknowledge-mode: manual
+        retry:
+          enabled: true
+          max-attempts: 3
+
+jwt:
+  secret: ${JWT_SECRET:dev-secret-key-must-be-at-least-256-bits-long-for-HS256-algorithm}
+  expiration-ms: 86400000  # 24 hours
+
+feign:
+  # CRITICAL: enables Spring Cloud CircuitBreaker integration with Feign.
+  # Without this, the fallback = EquipmentClientFallback.class in @FeignClient is NOT activated.
+  circuitbreaker:
+    enabled: true
+  client:
+    config:
+      equipment-service:
+        connect-timeout: 2000
+        read-timeout: 3000    # Acts as TimeLimiter — throws ReadTimeout if Equipment Service is slow
+        logger-level: FULL
+
+resilience4j:
+  retry:
+    instances:
+      equipment-service:
+        max-attempts: 3
+        wait-duration: 500ms
+        retry-exceptions:
+          - java.io.IOException
+          - feign.FeignException.ServiceUnavailable
+  circuit-breaker:
+    instances:
+      equipment-service:
+        sliding-window-size: 10
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 10s
+        permitted-number-of-calls-in-half-open-state: 3
+        automatic-transition-from-open-to-half-open-enabled: true
+  timelimiter:
+    instances:
+      equipment-service:
+        timeout-duration: 2s
+
+logging:
+  level:
+    com.labplatform.booking: DEBUG
+    org.springframework.security: DEBUG
+    io.github.resilience4j: DEBUG
+
+# RabbitMQ Queue names (used by @RabbitListener in Equipment Service)
+equipment:
+  booking:
+    queue:
+      name: equipment.booking.queue
+
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_URI:http://localhost:8761/eureka}
+  instance:
+    prefer-ip-address: true
+    lease-renewal-interval-in-seconds: 10
+    metadata-map:
+      version: 1.0.0
+      environment: dev
+
+# Zipkin distributed tracing
+management:
+  zipkin:
+    tracing:
+      endpoint: http://${ZIPKIN_HOST:localhost}:9411/api/v2/spans
+  tracing:
+    sampling:
+      probability: 1.0  # 100% trace sampling in dev

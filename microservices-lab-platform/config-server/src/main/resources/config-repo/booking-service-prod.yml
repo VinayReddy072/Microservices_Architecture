@@ -1,0 +1,115 @@
+# ============================================================
+# booking-service-prod.yml — Booking Service PROD profile
+# All secrets injected via environment variables — NO hardcoding
+# ============================================================
+
+server:
+  port: 8081
+  tomcat:
+    max-threads: 200
+    accept-count: 100
+
+spring:
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:postgres-booking}:5432/booking_db
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 10
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+      pool-name: BookingHikariPool
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        jdbc:
+          batch_size: 50
+  rabbitmq:
+    host: ${RABBITMQ_HOST:rabbitmq}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USERNAME}
+    password: ${RABBITMQ_PASSWORD}
+    virtual-host: /
+    connection-timeout: 10000
+    publisher-confirm-type: correlated
+    publisher-returns: true
+    listener:
+      simple:
+        acknowledge-mode: manual
+        concurrency: 3
+        max-concurrency: 10
+        retry:
+          enabled: true
+          max-attempts: 5
+          initial-interval: 1000ms
+          multiplier: 2.0
+          max-interval: 10000ms
+
+jwt:
+  secret: ${JWT_SECRET}
+  expiration-ms: 3600000  # 1 hour in production
+
+feign:
+  circuitbreaker:
+    enabled: true
+  client:
+    config:
+      equipment-service:
+        connect-timeout: 2000
+        read-timeout: 3000
+
+resilience4j:
+  retry:
+    instances:
+      equipment-service:
+        max-attempts: 3
+        wait-duration: 1s
+  circuit-breaker:
+    instances:
+      equipment-service:
+        sliding-window-size: 20
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 30s
+  timelimiter:
+    instances:
+      equipment-service:
+        timeout-duration: 2s
+
+logging:
+  level:
+    com.labplatform.booking: WARN
+    root: WARN
+  file:
+    name: /var/log/booking-service/application.log
+    max-size: 50MB
+    max-history: 30
+
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_URI:http://eureka-server:8761/eureka}
+  instance:
+    prefer-ip-address: true
+    metadata-map:
+      version: 1.0.0
+      environment: prod
+
+equipment:
+  booking:
+    queue:
+      name: equipment.booking.queue
+
+management:
+  zipkin:
+    tracing:
+      endpoint: http://${ZIPKIN_HOST:zipkin}:9411/api/v2/spans
+  tracing:
+    sampling:
+      probability: 0.1  # 10% sampling in production (reduce Zipkin load)

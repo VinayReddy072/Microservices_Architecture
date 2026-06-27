@@ -1,0 +1,75 @@
+# ============================================================
+# equipment-service-dev.yml — Equipment Service DEV profile
+# ============================================================
+
+server:
+  port: 8082
+
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/equipment_db
+    username: ${DB_USERNAME:equipmentuser}
+    password: ${DB_PASSWORD:equipmentpass}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 5
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+  rabbitmq:
+    host: ${RABBITMQ_HOST:localhost}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USERNAME:guest}
+    password: ${RABBITMQ_PASSWORD:guest}
+    virtual-host: /
+    connection-timeout: 5000
+    listener:
+      simple:
+        acknowledge-mode: manual
+        retry:
+          enabled: true
+          max-attempts: 3
+
+jwt:
+  secret: ${JWT_SECRET:dev-secret-key-must-be-at-least-256-bits-long-for-HS256-algorithm}
+
+# Equipment-specific business rules
+equipment:
+  maintenance:
+    usage-threshold: 10  # trigger maintenance after 10 bookings
+  availability:
+    cache-ttl-seconds: 60
+  booking:
+    queue:
+      name: equipment.booking.queue  # matches @RabbitListener queue name
+
+management:
+  zipkin:
+    tracing:
+      endpoint: http://${ZIPKIN_HOST:localhost}:9411/api/v2/spans
+  tracing:
+    sampling:
+      probability: 1.0  # 100% in dev
+
+logging:
+  level:
+    com.labplatform.equipment: DEBUG
+    org.springframework.security: DEBUG
+    org.springframework.amqp: DEBUG
+
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_URI:http://localhost:8761/eureka}
+  instance:
+    prefer-ip-address: true
+    lease-renewal-interval-in-seconds: 10
+    metadata-map:
+      version: 1.0.0
+      environment: dev
