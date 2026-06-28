@@ -50,7 +50,7 @@ public class EquipmentService {
         log.info("Updating equipment id={}", id);
         Equipment equipment = findById(id);
         equipmentMapper.updateFromRequest(equipment, request);
-        Equipment updated = equipmentRepository.save(equipment);
+        Equipment updated = Objects.requireNonNull(equipmentRepository.save(equipment));
         return equipmentMapper.toResponse(updated);
     }
     @Transactional

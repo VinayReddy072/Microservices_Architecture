@@ -12,11 +12,15 @@ import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.http.server.reactive.ServerHttpResponse;
 import org.springframework.stereotype.Component;
 import org.springframework.web.server.ServerWebExchange;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import org.springframework.core.io.buffer.DataBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.Objects;
 @Slf4j
 @Component
-@Order(Ordered.HIGHEST_PRECEDENCE + 2)  
+@Order(Ordered.HIGHEST_PRECEDENCE + 2)
 public class JwtAuthenticationFilter implements GlobalFilter {
     private static final String BEARER_PREFIX = "Bearer ";
     private static final String HEADER_USERNAME = "X-Auth-Username";
@@ -70,8 +74,8 @@ public class JwtAuthenticationFilter implements GlobalFilter {
         response.getHeaders().setContentType(MediaType.APPLICATION_JSON);
         String body = String.format(
                 "{\"status\":401,\"error\":\"Unauthorized\",\"message\":\"%s\"}", message);
-        byte[] bytes = body.getBytes(java.nio.charset.StandardCharsets.UTF_8);
-        org.springframework.core.io.buffer.DataBuffer buffer = response.bufferFactory().wrap(bytes);
-        return response.writeWith(reactor.core.publisher.Flux.just(buffer));
+        byte[] bytes = Objects.requireNonNull(body.getBytes(StandardCharsets.UTF_8));
+        DataBuffer buffer = response.bufferFactory().wrap(bytes);
+        return response.writeWith(Objects.requireNonNull(Flux.just(buffer)));
     }
 }
