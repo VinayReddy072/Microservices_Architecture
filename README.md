@@ -1,7 +1,5 @@
 # University Lab Equipment Booking & Maintenance Platform
 
----
-
 ## Architecture Diagram
 
 ```mermaid
