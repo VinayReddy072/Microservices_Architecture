@@ -1,5 +1,4 @@
 # University Lab Equipment Booking & Maintenance Platform
-### Production-Grade Spring Boot Microservices Architecture
 
 ---
 
