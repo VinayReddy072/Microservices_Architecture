@@ -50,7 +50,6 @@ public class EquipmentService {
         log.info("Updating equipment id={}", id);
         Equipment equipment = findById(id);
         equipmentMapper.updateFromRequest(equipment, request);
-        @SuppressWarnings("null")
         Equipment updated = equipmentRepository.save(equipment);
         return equipmentMapper.toResponse(updated);
     }
@@ -78,7 +77,7 @@ public class EquipmentService {
         Equipment preCheckEquipment = findById(equipmentId);
         if (preCheckEquipment.getMaintenanceRequired() || preCheckEquipment.getStatus() != EquipmentStatus.AVAILABLE) {
             log.warn("Race condition detected: equipmentId={} is not available. Rejecting booking.", equipmentId);
-            return false; // Indicates rejection needed
+            return false;
         }
 
         int updatedRows = equipmentRepository.incrementUsageAndMarkBooked(equipmentId, maintenanceThreshold);
@@ -102,7 +101,7 @@ public class EquipmentService {
         equipment.setStatus(EquipmentStatus.AVAILABLE);
         equipment.setMaintenanceRequired(false);
         equipment.setLastMaintenanceAt(LocalDateTime.now());
-        equipment.setUsageCount(0);  
+        equipment.setUsageCount(0);
         Equipment updated = equipmentRepository.save(equipment);
         log.info("Maintenance completed for equipmentId={}", id);
         return equipmentMapper.toResponse(updated);

@@ -14,8 +14,6 @@
 #   docker-compose down -v  # destroy volumes too
 # ============================================================
 
-version: '3.9'
-
 # ============================================================
 # NETWORKS
 # ============================================================
@@ -133,6 +131,24 @@ services:
       timeout: 5s
       retries: 5
       start_period: 20s
+    restart: unless-stopped
+
+  # ----------------------------------------------------------
+  # INFRASTRUCTURE: Redis — Rate Limiting (prod profile)
+  # ----------------------------------------------------------
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    ports:
+      - "6379:6379"
+    networks:
+      - lab-platform-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
     restart: unless-stopped
 
   # ----------------------------------------------------------
@@ -257,8 +273,9 @@ services:
       EUREKA_URI: http://${EUREKA_USERNAME:-eurekauser}:${EUREKA_PASSWORD:-eurekapass}@eureka-server:8761/eureka
       JWT_SECRET: ${JWT_SECRET:-dev-secret-key-must-be-at-least-256-bits-long-for-HS256}
       ZIPKIN_HOST: zipkin
-    ports:
-      - "8081:8081"
+    # NOTE: Ports 8081/8082 are NOT exposed externally.
+    # All client access goes through the API Gateway on port 8080.
+    # This enforces the gateway-first security model.
     depends_on:
       postgres-booking:
         condition: service_healthy
@@ -301,8 +318,9 @@ services:
       EUREKA_URI: http://${EUREKA_USERNAME:-eurekauser}:${EUREKA_PASSWORD:-eurekapass}@eureka-server:8761/eureka
       JWT_SECRET: ${JWT_SECRET:-dev-secret-key-must-be-at-least-256-bits-long-for-HS256}
       ZIPKIN_HOST: zipkin
-    ports:
-      - "8082:8082"
+    # NOTE: Ports 8081/8082 are NOT exposed externally.
+    # All client access goes through the API Gateway on port 8080.
+    # This enforces the gateway-first security model.
     depends_on:
       postgres-equipment:
         condition: service_healthy

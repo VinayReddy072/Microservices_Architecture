@@ -38,3 +38,7 @@ Thumbs.db
 
 # Spring Boot devtools
 .spring-boot-devtools.properties
+
+# Build artifacts / temp logs
+compile_log.txt
+*.log.txt

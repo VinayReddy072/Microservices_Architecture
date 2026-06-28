@@ -95,7 +95,6 @@ public class BookingService {
             throw new IllegalArgumentException("End time must be after start time");
         }
         bookingMapper.updateEntityFromRequest(booking, request);
-        @SuppressWarnings("null")
         Booking updated = bookingRepository.save(booking);
         log.info("Booking updated: bookingId={}", updated.getId());
         return bookingMapper.toResponse(updated);

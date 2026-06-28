@@ -64,7 +64,6 @@ public class JwtAuthenticationFilter implements GlobalFilter {
     private boolean isPublicPath(String path) {
         return PUBLIC_PATHS.stream().anyMatch(path::startsWith);
     }
-    @SuppressWarnings("null") 
     private Mono<Void> buildUnauthorizedResponse(ServerWebExchange exchange, String message) {
         ServerHttpResponse response = exchange.getResponse();
         response.setStatusCode(HttpStatus.UNAUTHORIZED);

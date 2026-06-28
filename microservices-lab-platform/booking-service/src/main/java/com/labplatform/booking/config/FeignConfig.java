@@ -28,9 +28,16 @@ public class FeignConfig {
     @Bean
     public RequestInterceptor correlationIdInterceptor() {
         return requestTemplate -> {
-            String correlationId = org.slf4j.MDC.get("traceId");
-            if (correlationId != null) {
+            // Prefer the X-Correlation-Id set by the Gateway CorrelationIdFilter
+            // Fall back to the OTel/Micrometer traceId in MDC
+            String correlationId = org.slf4j.MDC.get("correlationId");
+            if (correlationId == null || correlationId.isBlank()) {
+                correlationId = org.slf4j.MDC.get("traceId");
+            }
+            if (correlationId != null && !correlationId.isBlank()) {
                 requestTemplate.header("X-Correlation-Id", correlationId);
+                log.debug("Feign propagating X-Correlation-Id={} to {}", correlationId,
+                        requestTemplate.url());
             }
         };
     }
